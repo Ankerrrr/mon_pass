@@ -1,0 +1,79 @@
+<h2>區網儀表板：建議資訊架構</h2>
+<p class="subtitle">桌面顯示完整工作區；手機自動改成單欄卡片。危險操作集中在系統設定，不會混在日常回測流程。</p>
+
+<div class="mockup">
+  <div class="mockup-header">桌面版預覽</div>
+  <div class="mockup-body" style="padding:0;overflow:hidden">
+    <div style="display:grid;grid-template-columns:190px 1fr;min-height:610px;background:#0b1020">
+      <aside style="padding:18px 14px;border-right:1px solid #334155;background:#111827">
+        <div style="font-weight:800;font-size:18px;margin-bottom:22px;color:#f8fafc">Quant Home</div>
+        <div style="display:grid;gap:8px;font-size:14px">
+          <div style="padding:10px;border-radius:8px;background:#1d4ed8;color:white">總覽</div>
+          <div style="padding:10px;border-radius:8px;background:#1f2937">建立回測</div>
+          <div style="padding:10px;border-radius:8px;background:#1f2937">回測結果</div>
+          <div style="padding:10px;border-radius:8px;background:#1f2937">策略設定</div>
+          <div style="padding:10px;border-radius:8px;background:#1f2937">模擬交易</div>
+          <div style="padding:10px;border-radius:8px;background:#1f2937">交易紀錄</div>
+          <div style="padding:10px;border-radius:8px;background:#1f2937">資料管理</div>
+          <div style="padding:10px;border-radius:8px;background:#1f2937">系統設定</div>
+        </div>
+        <div style="margin-top:28px;padding:10px;border:1px solid #14532d;border-radius:8px;background:#052e16;color:#86efac;font-size:12px">● 模擬模式<br>不會送出真實訂單</div>
+      </aside>
+
+      <main style="padding:20px;display:grid;gap:16px;align-content:start">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div><div class="label">投資組合總覽</div><h3 style="margin:4px 0">多策略績效</h3></div>
+          <div style="display:flex;gap:8px"><span style="padding:8px 12px;border-radius:8px;background:#1f2937">BTC/USDT + 11</span><span style="padding:8px 12px;border-radius:8px;background:#1f2937">管理員</span></div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px">
+          <div style="padding:14px;border:1px solid #334155;border-radius:10px;background:#111827"><div class="label">總報酬</div><strong style="font-size:22px;color:#4ade80">+18.42%</strong></div>
+          <div style="padding:14px;border:1px solid #334155;border-radius:10px;background:#111827"><div class="label">最大回撤</div><strong style="font-size:22px;color:#fb7185">-9.31%</strong></div>
+          <div style="padding:14px;border:1px solid #334155;border-radius:10px;background:#111827"><div class="label">交易次數</div><strong style="font-size:22px">284</strong></div>
+          <div style="padding:14px;border:1px solid #334155;border-radius:10px;background:#111827"><div class="label">目前曝險</div><strong style="font-size:22px">63%</strong></div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1.8fr 1fr;gap:12px">
+          <div style="padding:14px;border:1px solid #334155;border-radius:10px;background:#111827">
+            <div style="display:flex;justify-content:space-between"><strong>資產曲線與基準比較</strong><span style="color:#94a3b8">組合 / BTC 買入持有</span></div>
+            <svg viewBox="0 0 600 190" style="width:100%;height:180px;margin-top:8px">
+              <polyline fill="none" stroke="#38bdf8" stroke-width="4" points="0,165 55,150 100,157 150,125 205,132 255,93 310,105 360,70 415,82 470,38 530,52 600,20" />
+              <polyline fill="none" stroke="#64748b" stroke-width="3" stroke-dasharray="7 6" points="0,165 55,158 100,145 150,152 205,120 255,128 310,92 360,102 415,68 470,72 530,44 600,48" />
+            </svg>
+          </div>
+          <div style="padding:14px;border:1px solid #334155;border-radius:10px;background:#111827">
+            <strong>策略資金比例</strong>
+            <div style="margin-top:18px;display:grid;gap:14px;font-size:13px">
+              <div><div style="display:flex;justify-content:space-between"><span>趨勢跟隨</span><span>40%</span></div><div style="height:8px;background:#1f2937;border-radius:6px"><div style="width:40%;height:100%;background:#38bdf8;border-radius:6px"></div></div></div>
+              <div><div style="display:flex;justify-content:space-between"><span>均值回歸</span><span>30%</span></div><div style="height:8px;background:#1f2937;border-radius:6px"><div style="width:30%;height:100%;background:#a78bfa;border-radius:6px"></div></div></div>
+              <div><div style="display:flex;justify-content:space-between"><span>網格交易</span><span>20%</span></div><div style="height:8px;background:#1f2937;border-radius:6px"><div style="width:20%;height:100%;background:#34d399;border-radius:6px"></div></div></div>
+              <div><div style="display:flex;justify-content:space-between"><span>現金保留</span><span>10%</span></div><div style="height:8px;background:#1f2937;border-radius:6px"><div style="width:10%;height:100%;background:#f59e0b;border-radius:6px"></div></div></div>
+            </div>
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px">
+          <div style="padding:14px;border-left:4px solid #38bdf8;border-radius:10px;background:#111827"><strong>趨勢跟隨</strong><p style="margin:6px 0;color:#94a3b8">報酬 +22.8% · 回撤 -11.2%</p><span style="color:#4ade80">運作正常</span></div>
+          <div style="padding:14px;border-left:4px solid #a78bfa;border-radius:10px;background:#111827"><strong>均值回歸</strong><p style="margin:6px 0;color:#94a3b8">報酬 +13.4% · 回撤 -7.9%</p><span style="color:#4ade80">運作正常</span></div>
+          <div style="padding:14px;border-left:4px solid #34d399;border-radius:10px;background:#111827"><strong>網格交易</strong><p style="margin:6px 0;color:#94a3b8">報酬 +9.1% · 回撤 -6.2%</p><span style="color:#fbbf24">2 個幣種超出區間</span></div>
+        </div>
+      </main>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <h3>日常操作流程</h3>
+  <p>建立回測 → 選擇不限數量的 USDT 交易對 → 設定三策略資金比例與幣種權重 → 各自設定 K 線週期與參數 → 執行 → 在結果頁比較策略、幣種及整體組合。</p>
+</div>
+
+<div class="options">
+  <div class="option" data-choice="approve-dashboard" onclick="toggleSelect(this)">
+    <div class="letter">✓</div>
+    <div class="content"><h3>介面架構正確</h3><p>保留左側導覽與總覽卡片，繼續定義策略參數和風控。</p></div>
+  </div>
+  <div class="option" data-choice="revise-dashboard" onclick="toggleSelect(this)">
+    <div class="letter">↺</div>
+    <div class="content"><h3>需要調整</h3><p>在終端告訴我缺少的頁面或希望改變的操作方式。</p></div>
+  </div>
+</div>

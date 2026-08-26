@@ -1,0 +1,85 @@
+<h2>多策略量化回測系統：整體架構</h2>
+<p class="subtitle">模組化單體部署於家中電腦；手機與電腦透過區域網路登入。第一階段只有回測與模擬，不會送出真實訂單。</p>
+
+<div class="mockup">
+  <div class="mockup-header">資料與決策流程</div>
+  <div class="mockup-body">
+    <div style="display:grid;grid-template-columns:1fr auto 1.2fr auto 1.2fr;gap:14px;align-items:center;text-align:center">
+      <div style="padding:18px;border:1px solid #4b5563;border-radius:12px;background:#111827">
+        <div class="label">外部資料</div>
+        <h3>Binance 公開行情</h3>
+        <p>K 線、交易對狀態、價格與成交量</p>
+      </div>
+      <div style="font-size:28px">→</div>
+      <div style="padding:18px;border:1px solid #4b5563;border-radius:12px;background:#111827">
+        <div class="label">核心資料層</div>
+        <h3>行情服務＋資料庫</h3>
+        <p>下載、補洞、去重、快取與版本記錄</p>
+      </div>
+      <div style="font-size:28px">→</div>
+      <div style="padding:18px;border:1px solid #4b5563;border-radius:12px;background:#111827">
+        <div class="label">工作協調</div>
+        <h3>回測工作器</h3>
+        <p>依幣種、週期與日期排程，限制同時工作數</p>
+      </div>
+    </div>
+
+    <div style="display:flex;justify-content:center;font-size:28px;margin:8px 0">↓</div>
+
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px">
+      <div style="padding:18px;border:2px solid #38bdf8;border-radius:12px;background:#082f49">
+        <div class="label">策略帳本 A</div>
+        <h3>趨勢跟隨</h3>
+        <p>均線、突破、停損與獨立資金比例</p>
+      </div>
+      <div style="padding:18px;border:2px solid #a78bfa;border-radius:12px;background:#2e1065">
+        <div class="label">策略帳本 B</div>
+        <h3>均值回歸</h3>
+        <p>RSI、布林通道、退出條件與獨立持倉</p>
+      </div>
+      <div style="padding:18px;border:2px solid #34d399;border-radius:12px;background:#064e3b">
+        <div class="label">策略帳本 C</div>
+        <h3>網格交易</h3>
+        <p>上下界、格數、每格資金與區間外保護</p>
+      </div>
+    </div>
+
+    <div style="display:flex;justify-content:center;font-size:28px;margin:8px 0">↓</div>
+
+    <div style="display:grid;grid-template-columns:1.2fr auto 1.2fr auto 1fr;gap:14px;align-items:center;text-align:center">
+      <div style="padding:18px;border:2px solid #f59e0b;border-radius:12px;background:#451a03">
+        <div class="label">共用保護</div>
+        <h3>投資組合風控</h3>
+        <p>策略比例、幣種權重、最大曝險與回撤停止</p>
+      </div>
+      <div style="font-size:28px">→</div>
+      <div style="padding:18px;border:1px solid #4b5563;border-radius:12px;background:#111827">
+        <div class="label">結果</div>
+        <h3>交易與績效資料</h3>
+        <p>每筆訊號、訂單、持倉、損益及資產曲線</p>
+      </div>
+      <div style="font-size:28px">→</div>
+      <div style="padding:18px;border:2px solid #fb7185;border-radius:12px;background:#4c0519">
+        <div class="label">區域網路</div>
+        <h3>管理員儀表板</h3>
+        <p>React 圖表、參數調整、比較與匯出</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <h3>關鍵邊界</h3>
+  <p>三種策略各自保留虛擬帳本，確保績效可追蹤；共用風控只負責限制總資金與總曝險。網頁不直接接觸 Binance，所有資料與操作都經過 FastAPI 後端。</p>
+</div>
+
+<div class="options">
+  <div class="option" data-choice="approve-architecture" onclick="toggleSelect(this)">
+    <div class="letter">✓</div>
+    <div class="content"><h3>架構正確</h3><p>採用這個模組分工，繼續確認網頁畫面與功能。</p></div>
+  </div>
+  <div class="option" data-choice="revise-architecture" onclick="toggleSelect(this)">
+    <div class="letter">↺</div>
+    <div class="content"><h3>需要調整</h3><p>在終端告訴我想增加、移除或改變的模組。</p></div>
+  </div>
+</div>
