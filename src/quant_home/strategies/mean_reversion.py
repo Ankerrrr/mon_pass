@@ -78,7 +78,12 @@ class MeanReversionStrategy:
             return "TAKE_PROFIT"
         if holding_candles >= self.config.max_holding_candles:
             return "MAX_HOLDING"
-        if rsi > self.config.rsi_exit or current >= middle_band:
+        minimum_profitable_exit = average_price * (
+            Decimal("1") + self.config.minimum_exit_profit
+        )
+        if (
+            rsi > self.config.rsi_exit or current >= middle_band
+        ) and current >= minimum_profitable_exit:
             return "MEAN_REVERSION_EXIT"
         return None
 

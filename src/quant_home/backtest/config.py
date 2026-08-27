@@ -72,6 +72,7 @@ class MeanReversionConfig(FrozenModel):
     max_holding_candles: int = Field(default=72, ge=1, le=100000)
     stop_loss: Decimal = Field(default=Decimal("0.05"), gt=0, lt=1)
     take_profit: Decimal = Field(default=Decimal("0.08"), gt=0, lt=10)
+    minimum_exit_profit: Decimal = Field(default=Decimal("0.005"), ge=0, lt=1)
 
     @model_validator(mode="after")
     def entry_is_less_than_exit(self):

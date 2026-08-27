@@ -98,6 +98,23 @@ def test_maximum_holding_period_exits_position():
     assert signals[0].reason == "MAX_HOLDING"
 
 
+def test_mean_reversion_signal_waits_until_position_has_minimum_profit():
+    position = Position(
+        symbol="BTCUSDT", quantity=Decimal("1"), average_price=Decimal("100")
+    )
+
+    signals = strategy().generate(
+        2,
+        CandleWindow(candles(["100", "99", "100.4"]), 2),
+        StrategyState(
+            positions={"BTCUSDT": position},
+            values={"symbol": "BTCUSDT", "holding_candles": 1},
+        ),
+    )
+
+    assert signals == []
+
+
 def test_mean_reversion_does_not_read_future_candles():
     prefix = ["100", "100", "100", "90", "50"]
     first = strategy().generate(
