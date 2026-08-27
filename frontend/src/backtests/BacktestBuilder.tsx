@@ -1,6 +1,7 @@
 import { FormEvent, useMemo, useState } from "react";
 
 import { ApiError, createBacktest, createConfiguration } from "../api/client";
+import { JobProgress } from "../jobs/JobProgress";
 
 function isoDate(date: Date) {
   return date.toISOString().slice(0, 10);
@@ -20,6 +21,7 @@ export function BacktestBuilder() {
   const [capital, setCapital] = useState("10000");
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
+  const [jobId, setJobId] = useState("");
 
   async function submit(event: FormEvent) {
     event.preventDefault();
@@ -37,6 +39,7 @@ export function BacktestBuilder() {
     try {
       const configuration = await createConfiguration(name.trim(), payload);
       const job = await createBacktest(configuration.id);
+      setJobId(job.job_id);
       setMessage(`回測工作已送出 · ${job.job_id.slice(0, 8)}`);
     } catch (error) {
       setMessage(error instanceof ApiError ? `無法執行：${error.message}` : "無法執行回測，請稍後重試");
@@ -57,5 +60,6 @@ export function BacktestBuilder() {
       <button className="primary-action" type="submit" disabled={busy} aria-label="儲存並執行回測">{busy ? "準備資料中…" : "儲存並執行回測"}<span>→</span></button>
       {message && <p className={message.startsWith("回測") ? "success-message" : "form-error"} role="status">{message}</p>}
     </form>
+    {jobId && <JobProgress jobId={jobId} />}
   </section>;
 }

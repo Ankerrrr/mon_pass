@@ -11,7 +11,10 @@ it("creates a validated configuration and submits its backtest", async () => {
     }), { status: 201, headers: { "Content-Type": "application/json" } }))
     .mockResolvedValueOnce(new Response(JSON.stringify({ job_id: "job-1" }), {
       status: 202, headers: { "Content-Type": "application/json" },
-    }));
+    }))
+    .mockResolvedValue(new Response(JSON.stringify({
+      id: "job-1", kind: "backtest", status: "completed", progress: 1, error: null, created_at: "2026-01-01T00:00:00Z",
+    }), { status: 200, headers: { "Content-Type": "application/json" } }));
   vi.stubGlobal("fetch", fetchMock);
   render(<BacktestBuilder />);
 

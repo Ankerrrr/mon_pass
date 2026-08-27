@@ -8,6 +8,8 @@ from quant_home.market import models as market_models  # noqa: F401
 from quant_home.jobs import models as job_models  # noqa: F401
 from quant_home.backtest import models as backtest_models  # noqa: F401
 from quant_home.configurations import models as configuration_models  # noqa: F401
+from quant_home.paper import models as paper_models  # noqa: F401
+from quant_home.audit import models as audit_models  # noqa: F401
 from quant_home.config import Settings
 from quant_home.db import Base
 

@@ -1,4 +1,13 @@
 services:
+  web:
+    build: ./frontend
+    depends_on:
+      api:
+        condition: service_healthy
+    ports:
+      - "${QUANT_HOME_BIND_HOST:-127.0.0.1}:${QUANT_HOME_WEB_PORT:-3000}:80"
+    restart: unless-stopped
+
   api:
     build: .
     command: ["sh", "-c", "alembic upgrade head && uvicorn quant_home.main:create_app --factory --host 0.0.0.0 --port 8000"]
@@ -27,6 +36,7 @@ services:
       timeout: 3s
       retries: 5
       start_period: 10s
+    restart: unless-stopped
 
   db:
     image: postgres:16-alpine
@@ -41,6 +51,7 @@ services:
       interval: 5s
       timeout: 3s
       retries: 10
+    restart: unless-stopped
 
 volumes:
   postgres-data:

@@ -5,7 +5,7 @@ import logging
 from fastapi import FastAPI
 from sqlalchemy import select
 
-from quant_home.api import auth, backtests, configurations, datasets, health, jobs, symbols
+from quant_home.api import auth, backtests, configurations, datasets, health, jobs, paper, symbols, system
 from quant_home.auth.models import Administrator
 from quant_home.auth.passwords import hash_password
 from quant_home.auth.service import LoginThrottle
@@ -15,6 +15,8 @@ from quant_home.market.binance_client import BinancePublicClient
 from quant_home.market.catalog import SymbolCatalog
 from quant_home.jobs.repository import JobRepository
 from quant_home.jobs.runner import JobRunner
+from quant_home.paper.repository import PaperRepository
+from quant_home.paper.supervisor import PaperSupervisor
 
 
 logger = logging.getLogger(__name__)
@@ -65,9 +67,12 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             except Exception as exc:
                 app.state.symbol_catalog_error = str(exc)
                 logger.exception("Binance symbol catalog refresh failed")
+        if resolved_settings.environment != "test":
+            app.state.paper_supervisor.start()
         try:
             yield
         finally:
+            await app.state.paper_supervisor.stop()
             app.state.market_client.close()
             engine.dispose()
 
@@ -89,6 +94,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.state.symbol_catalog = SymbolCatalog(binance_client)
     app.state.symbol_catalog_error = None
     app.state.candle_downloader = binance_client
+    app.state.paper_supervisor = PaperSupervisor(PaperRepository(session_factory), binance_client)
     app.state.job_repository = job_repository
     app.state.job_runner = job_runner
     app.include_router(health.router, prefix="/api")
@@ -98,4 +104,6 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(configurations.router, prefix="/api")
     app.include_router(backtests.router, prefix="/api")
     app.include_router(jobs.router, prefix="/api")
+    app.include_router(paper.router, prefix="/api")
+    app.include_router(system.router, prefix="/api")
     return app

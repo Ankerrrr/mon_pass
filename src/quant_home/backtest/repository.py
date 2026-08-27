@@ -77,6 +77,14 @@ class BacktestRepository:
             self._detach(db, run)
             return run
 
+    def delete(self, run_id: UUID) -> None:
+        with self.session_factory() as db:
+            run = db.get(BacktestRun, run_id)
+            if run is None:
+                raise BacktestRunNotFound
+            db.delete(run)
+            db.commit()
+
     @staticmethod
     def _result_snapshot(result: BacktestResult) -> dict[str, Any]:
         return {

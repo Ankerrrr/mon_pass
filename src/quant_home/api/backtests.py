@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session
 
 from quant_home.api.auth import require_admin, require_csrf
 from quant_home.auth.models import Administrator, AdminSession
+from quant_home.audit.service import AuditService
 from quant_home.backtest.models import BacktestRun
 from quant_home.backtest.repository import BacktestRepository, BacktestRunNotFound
 from quant_home.backtest.service import BacktestService, DuplicateBacktest
@@ -142,3 +143,14 @@ def backtest_detail(
         return _run_json(_repository(request).get(run_id))
     except BacktestRunNotFound as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND) from exc
+
+
+@router.delete("/{run_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_backtest(
+    run_id: UUID, request: Request, db: Database, session: CsrfProtected
+) -> None:
+    try:
+        _repository(request).delete(run_id)
+    except BacktestRunNotFound as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND) from exc
+    AuditService(db).record(session.administrator_id, "BACKTEST_DELETE", "backtest", str(run_id))

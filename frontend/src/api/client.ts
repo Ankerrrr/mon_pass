@@ -72,3 +72,32 @@ export async function createBacktest(configurationId: string): Promise<{ job_id:
     method: "POST", body: JSON.stringify({ configuration_id: configurationId }),
   });
 }
+
+export type PaperSession = {
+  id: string; configuration_id: string | null; configuration_version: number;
+  status: "active" | "stopped" | "error"; connection_state: string;
+  last_candle_at: string | null; error: string | null; created_at: string;
+  state_snapshot: { cash_reserve: string; ledgers: Record<string, { cash: string; fills: unknown[]; positions: Record<string, unknown> }> };
+};
+
+export const listPaperSessions = () => request<PaperSession[]>("/paper");
+export const startPaperSession = (configurationId: string) => request<{ id: string }>("/paper", {
+  method: "POST", body: JSON.stringify({ configuration_id: configurationId }),
+});
+export const stopPaperSession = (sessionId: string) => request<{ stopped: boolean }>(`/paper/${sessionId}/stop`, { method: "POST" });
+export const emergencyStopPaper = () => request<{ stopped: number }>("/paper/emergency-stop/all", { method: "POST" });
+export const systemHealth = () => request<Record<string, string | null>>("/system/health");
+
+export type Job = { id: string; status: string; progress: number; error: string | null; kind: string; created_at: string };
+export const getJob = (id: string) => request<Job>(`/jobs/${id}`);
+export const cancelJob = (id: string) => request<{ status: string }>(`/jobs/${id}/cancel`, { method: "POST" });
+export const cloneConfiguration = (id: string, name: string) => request<Configuration>(`/configurations/${id}/clone`, { method: "POST", body: JSON.stringify({ name }) });
+export const deleteConfiguration = (id: string) => request<void>(`/configurations/${id}`, { method: "DELETE" });
+export const exportConfiguration = (id: string) => request<Record<string, unknown>>(`/configurations/${id}/export`);
+
+export type Dataset = { id: string; symbol: string; interval: string; start: string; end: string; candle_count: number; is_valid: boolean; reference_count: number; fingerprint: string };
+export const listDatasets = () => request<Dataset[]>("/datasets");
+export const deleteDataset = (id: string) => request<void>(`/datasets/${id}`, { method: "DELETE" });
+export const refreshSymbols = () => request<{ total_symbols: number }>("/symbols/refresh", { method: "POST" });
+export type AuditEvent = { id: string; action: string; subject_type: string; subject_id: string | null; created_at: string };
+export const listAuditEvents = () => request<AuditEvent[]>("/paper/audit/events");

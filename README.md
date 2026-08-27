@@ -1,6 +1,6 @@
 # Quant Home
 
-Quant Home 是供可信任家用 LAN 使用的 Binance 現貨量化研究後端。本階段提供單一管理員登入、USDT 現貨交易對目錄、K 線下載與不可變資料集快取，以及受限併發背景工作。系統僅使用 Binance 公開市場資料，不保存 API key，也不會送出真實訂單。
+Quant Home 是供可信任家用 LAN 使用的 Binance 現貨量化研究工作台。包含三策略回測、版本化設定、結果匯出、即時模擬交易、緊急停止、健康監控與稽核紀錄。系統僅使用 Binance 公開市場資料，不保存 API key，也不會送出真實訂單。
 
 ## 啟動
 
@@ -14,7 +14,7 @@ Quant Home 是供可信任家用 LAN 使用的 Binance 現貨量化研究後端�
    docker compose up -d --build
    ```
 
-API 啟動前會自動執行 Alembic migration。確認服務：
+API 啟動前會自動執行 Alembic migration。瀏覽器開啟 [http://127.0.0.1:3000](http://127.0.0.1:3000)，確認服務：
 
 ```powershell
 docker compose ps
@@ -29,7 +29,7 @@ Invoke-RestMethod http://127.0.0.1:8000/api/health
 
 ## LAN 存取
 
-預設只綁定 `127.0.0.1`。若要讓同一可信任 LAN 的其他裝置連線，先設定非預設的 `QUANT_HOME_INITIAL_ADMIN_PASSWORD`，再將 `.env` 的 `QUANT_HOME_BIND_HOST` 改為 `0.0.0.0`；若密碼仍是 placeholder，應用會拒絕啟動。作業系統防火牆只應允許私人網路的 TCP 8000。請勿設定路由器 port forwarding，也不要把服務直接暴露到網際網路。
+預設只綁定 `127.0.0.1`。若要讓同一可信任 LAN 的其他裝置連線，先設定非預設的 `QUANT_HOME_INITIAL_ADMIN_PASSWORD`，再將 `.env` 的 `QUANT_HOME_BIND_HOST` 改為 `0.0.0.0`；若密碼仍是 placeholder，應用會拒絕啟動。作業系統防火牆只應允許私人網路的 TCP 3000（Web）與需要時的 8000（API）。請勿設定路由器 port forwarding，也不要把服務直接暴露到網際網路。
 
 若透過 HTTPS reverse proxy 使用，設定 `QUANT_HOME_HTTPS_ENABLED=true`，使 session cookie 加上 `Secure`。
 
@@ -56,3 +56,12 @@ docker compose down
 ```
 
 資料庫保存在具名 volume `postgres-data`。只有在確定要永久清除所有資料時，才使用 `docker compose down -v`。
+
+## 備份與還原
+
+```powershell
+.\scripts\backup.ps1 -Destination C:\QuantHomeBackups
+.\scripts\restore.ps1 -BackupPath C:\QuantHomeBackups\quant-home-YYYYMMDD-HHMMSS
+```
+
+還原前必須輸入 `RESTORE`，且腳本會先建立一份還原前備份。

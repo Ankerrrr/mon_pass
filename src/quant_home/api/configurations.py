@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 
 from quant_home.api.auth import require_admin, require_csrf
 from quant_home.auth.models import Administrator, AdminSession
+from quant_home.audit.service import AuditService
 from quant_home.backtest.config import (
     AllocationConfig,
     BacktestConfig,
@@ -95,6 +96,7 @@ def import_configuration(
         )
     except ConfigurationNameConflict as exc:
         raise _conflict(exc) from exc
+    AuditService(db).record(_session.administrator_id, "CONFIGURATION_IMPORT", "configuration", str(item.configuration.id))
     return _json(item)
 
 
@@ -112,6 +114,7 @@ def create_configuration(
         )
     except ConfigurationNameConflict as exc:
         raise _conflict(exc) from exc
+    AuditService(db).record(_session.administrator_id, "CONFIGURATION_CREATE", "configuration", str(item.configuration.id))
     return _json(item)
 
 
@@ -146,6 +149,7 @@ def update_configuration(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND) from exc
     except ConfigurationNameConflict as exc:
         raise _conflict(exc) from exc
+    AuditService(db).record(_session.administrator_id, "CONFIGURATION_UPDATE", "configuration", str(configuration_id), {"version": item.version.version})
     return _json(item)
 
 
@@ -164,6 +168,7 @@ def clone_configuration(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND) from exc
     except ConfigurationNameConflict as exc:
         raise _conflict(exc) from exc
+    AuditService(db).record(_session.administrator_id, "CONFIGURATION_CLONE", "configuration", str(item.configuration.id), {"source_id": str(configuration_id)})
     return _json(item)
 
 
@@ -196,3 +201,4 @@ def delete_configuration(
         _repository(db).delete(configuration_id)
     except ConfigurationNotFound as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND) from exc
+    AuditService(db).record(_session.administrator_id, "CONFIGURATION_DELETE", "configuration", str(configuration_id))
