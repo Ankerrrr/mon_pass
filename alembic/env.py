@@ -4,6 +4,7 @@ from alembic import context
 from sqlalchemy import engine_from_config, pool
 
 from quant_home.auth import models as auth_models  # noqa: F401
+from quant_home.market import models as market_models  # noqa: F401
 from quant_home.config import Settings
 from quant_home.db import Base
 

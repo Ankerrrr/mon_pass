@@ -1,7 +1,9 @@
 import httpx
 import pytest
+from datetime import UTC, datetime, timedelta
 
 from quant_home.market.binance_client import BinancePublicClient
+from quant_home.market.candles import CandleInterval
 
 
 def test_transient_server_error_is_retried_with_bounded_backoff():
@@ -42,3 +44,40 @@ def test_invalid_request_is_not_retried():
         client.exchange_info()
 
     assert attempts == 1
+
+
+def test_candle_download_paginates_after_one_thousand_rows():
+    start = datetime(2026, 1, 1, tzinfo=UTC)
+    end = start + timedelta(minutes=1001)
+    requests = 0
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        nonlocal requests
+        requests += 1
+        start_ms = int(request.url.params["startTime"])
+        end_ms = int(request.url.params["endTime"])
+        rows = []
+        current_ms = start_ms
+        while current_ms <= end_ms and len(rows) < 1000:
+            rows.append(
+                [
+                    current_ms,
+                    "100",
+                    "102",
+                    "99",
+                    "101",
+                    "10",
+                    current_ms + 59_999,
+                ]
+            )
+            current_ms += 60_000
+        return httpx.Response(200, json=rows, request=request)
+
+    client = BinancePublicClient(transport=httpx.MockTransport(handler))
+
+    candles = client.fetch_candles(
+        "BTCUSDT", CandleInterval.ONE_MINUTE, start, end
+    )
+
+    assert len(candles) == 1001
+    assert requests == 2
