@@ -4,12 +4,14 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from sqlalchemy import select
 
-from quant_home.api import auth, health
+from quant_home.api import auth, health, symbols
 from quant_home.auth.models import Administrator
 from quant_home.auth.passwords import hash_password
 from quant_home.auth.service import LoginThrottle
 from quant_home.config import Settings
 from quant_home.db import Base, create_database_engine, create_session_factory
+from quant_home.market.binance_client import BinancePublicClient
+from quant_home.market.catalog import SymbolCatalog
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
@@ -44,6 +46,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.state.settings = resolved_settings
     app.state.session_factory = session_factory
     app.state.login_throttle = LoginThrottle()
+    app.state.symbol_catalog = SymbolCatalog(BinancePublicClient())
     app.include_router(health.router, prefix="/api")
     app.include_router(auth.router, prefix="/api")
+    app.include_router(symbols.router, prefix="/api")
     return app
