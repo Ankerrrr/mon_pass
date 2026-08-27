@@ -1,5 +1,6 @@
 from typing import Literal
 
+from pydantic import model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -20,3 +21,16 @@ class Settings(BaseSettings):
     max_background_jobs: int = 3
     bind_host: str = "127.0.0.1"
     bind_port: int = 8000
+    refresh_symbol_catalog_on_startup: bool | None = None
+
+    @model_validator(mode="after")
+    def lan_binding_requires_non_placeholder_admin_password(self):
+        if self.bind_host not in {"127.0.0.1", "localhost", "::1"} and (
+            not self.initial_admin_password
+            or self.initial_admin_password == "change-this-password"
+        ):
+            raise ValueError(
+                "LAN binding requires QUANT_HOME_INITIAL_ADMIN_PASSWORD "
+                "to be set to a non-placeholder value"
+            )
+        return self

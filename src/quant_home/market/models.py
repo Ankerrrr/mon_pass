@@ -2,7 +2,16 @@ from datetime import UTC, datetime
 from decimal import Decimal
 from uuid import UUID, uuid4
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, Numeric, String, Uuid
+from sqlalchemy import (
+    Boolean,
+    DateTime,
+    ForeignKey,
+    Integer,
+    Numeric,
+    String,
+    UniqueConstraint,
+    Uuid,
+)
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from quant_home.db import Base
@@ -10,13 +19,23 @@ from quant_home.db import Base
 
 class CandleDataset(Base):
     __tablename__ = "candle_datasets"
+    __table_args__ = (
+        UniqueConstraint(
+            "symbol",
+            "interval",
+            "start_time",
+            "end_time",
+            "fingerprint",
+            name="uq_candle_dataset_identity",
+        ),
+    )
 
     id: Mapped[UUID] = mapped_column(Uuid, primary_key=True, default=uuid4)
     symbol: Mapped[str] = mapped_column(String(32), index=True, nullable=False)
     interval: Mapped[str] = mapped_column(String(8), index=True, nullable=False)
     start_time: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     end_time: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
-    fingerprint: Mapped[str] = mapped_column(String(64), unique=True, nullable=False)
+    fingerprint: Mapped[str] = mapped_column(String(64), nullable=False)
     candle_count: Mapped[int] = mapped_column(Integer, nullable=False)
     is_valid: Mapped[bool] = mapped_column(Boolean, nullable=False)
     reference_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)

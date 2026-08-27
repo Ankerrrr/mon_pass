@@ -44,3 +44,12 @@ def test_validation_rejects_duplicate_and_invalid_ohlc_range():
         "DUPLICATE_CANDLE",
         "INVALID_OHLC",
     }
+
+
+def test_validation_rejects_out_of_order_input():
+    report = validate_candles(
+        [candle(1), candle(0)],
+        CandleInterval.ONE_HOUR,
+    )
+
+    assert "OUT_OF_ORDER" in {issue.code for issue in report.issues}

@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Annotated
 from uuid import UUID
 
@@ -31,12 +31,18 @@ class RefreshDatasetRequest(BaseModel):
     def timestamps_must_have_timezone(cls, value: datetime) -> datetime:
         if value.tzinfo is None or value.utcoffset() is None:
             raise ValueError("timestamp must include a UTC offset")
-        return value
+        return value.astimezone(UTC)
 
     @model_validator(mode="after")
     def start_must_precede_end(self):
         if self.start >= self.end:
             raise ValueError("start must precede end")
+        interval_microseconds = int(self.interval.duration.total_seconds() * 1_000_000)
+        if (
+            int(self.start.timestamp() * 1_000_000) % interval_microseconds
+            or int(self.end.timestamp() * 1_000_000) % interval_microseconds
+        ):
+            raise ValueError("range must align to candle interval boundaries")
         return self
 
 
@@ -109,7 +115,6 @@ def refresh_dataset(
         payload.interval,
         payload.start,
         payload.end,
-        force_refresh=True,
     )
     return _dataset_json(dataset)
 

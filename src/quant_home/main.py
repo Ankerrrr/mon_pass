@@ -1,5 +1,6 @@
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+import logging
 
 from fastapi import FastAPI
 from sqlalchemy import select
@@ -14,6 +15,9 @@ from quant_home.market.binance_client import BinancePublicClient
 from quant_home.market.catalog import SymbolCatalog
 from quant_home.jobs.repository import JobRepository
 from quant_home.jobs.runner import JobRunner
+
+
+logger = logging.getLogger(__name__)
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
@@ -47,6 +51,20 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                         )
                     )
                     db.commit()
+        should_refresh_catalog = (
+            resolved_settings.refresh_symbol_catalog_on_startup is True
+            or (
+                resolved_settings.refresh_symbol_catalog_on_startup is None
+                and resolved_settings.environment != "test"
+            )
+        )
+        if should_refresh_catalog:
+            try:
+                app.state.symbol_catalog.refresh()
+                app.state.symbol_catalog_error = None
+            except Exception as exc:
+                app.state.symbol_catalog_error = str(exc)
+                logger.exception("Binance symbol catalog refresh failed")
         yield
         engine.dispose()
 
@@ -65,6 +83,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.state.login_throttle = LoginThrottle()
     binance_client = BinancePublicClient()
     app.state.symbol_catalog = SymbolCatalog(binance_client)
+    app.state.symbol_catalog_error = None
     app.state.candle_downloader = binance_client
     app.state.job_repository = job_repository
     app.state.job_runner = job_runner

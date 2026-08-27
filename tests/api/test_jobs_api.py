@@ -42,3 +42,14 @@ def test_job_inspection_and_cancellation_require_authentication_and_csrf():
 
         assert cancelled.status_code == 202
         assert app.state.job_repository.get(job_id).cancel_requested is True
+
+        completed_id = app.state.job_repository.insert(
+            status=JobStatus.COMPLETED,
+            kind="test",
+            payload={},
+        )
+        terminal_cancel = client.post(
+            f"/api/jobs/{completed_id}/cancel",
+            headers={"X-CSRF-Token": csrf_token},
+        )
+        assert terminal_cancel.status_code == 409

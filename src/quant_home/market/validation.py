@@ -26,6 +26,15 @@ def validate_candles(
     candles: Sequence[Candle], interval: CandleInterval
 ) -> ValidationReport:
     issues: list[ValidationIssue] = []
+    for previous, current in zip(candles, candles[1:]):
+        if current.open_time < previous.open_time:
+            issues.append(
+                ValidationIssue(
+                    "OUT_OF_ORDER",
+                    "Candles must be ordered by open time",
+                    current.open_time.isoformat(),
+                )
+            )
     ordered = sorted(candles, key=lambda candle: candle.open_time)
 
     seen = set()

@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request, status
 from quant_home.api.auth import require_admin, require_csrf
 from quant_home.auth.models import Administrator, AdminSession
 from quant_home.jobs.models import BackgroundJob
-from quant_home.jobs.repository import JobNotFound
+from quant_home.jobs.repository import InvalidJobTransition, JobNotFound
 
 
 router = APIRouter(prefix="/jobs", tags=["jobs"])
@@ -58,4 +58,9 @@ def cancel_job(
         request.app.state.job_runner.cancel(job_id)
     except JobNotFound as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND) from exc
+    except InvalidJobTransition as exc:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=str(exc),
+        ) from exc
     return {"status": "cancellation_requested"}

@@ -35,7 +35,7 @@ def upgrade() -> None:
             server_default=sa.func.now(),
         ),
         sa.PrimaryKeyConstraint("id"),
-        sa.UniqueConstraint("fingerprint"),
+        sa.UniqueConstraint("fingerprint", name="uq_candle_datasets_fingerprint"),
     )
     op.create_index("ix_candle_datasets_symbol", "candle_datasets", ["symbol"])
     op.create_index("ix_candle_datasets_interval", "candle_datasets", ["interval"])

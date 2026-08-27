@@ -13,6 +13,25 @@ class JobNotFound(Exception):
     pass
 
 
+class InvalidJobTransition(Exception):
+    pass
+
+
+_ALLOWED_TRANSITIONS = {
+    JobStatus.QUEUED: {*ACTIVE_JOB_STATUSES, JobStatus.CANCELLED, JobStatus.INTERRUPTED},
+    **{
+        active: {
+            *ACTIVE_JOB_STATUSES,
+            JobStatus.COMPLETED,
+            JobStatus.FAILED,
+            JobStatus.CANCELLED,
+            JobStatus.INTERRUPTED,
+        }
+        for active in ACTIVE_JOB_STATUSES
+    },
+}
+
+
 class JobRepository:
     def __init__(self, session_factory: Callable[[], Session]) -> None:
         self.session_factory = session_factory
@@ -67,26 +86,44 @@ class JobRepository:
         progress: float | None = None,
         error: str | None = None,
     ) -> None:
-        values: dict[str, Any] = {"status": status, "error": error}
-        if progress is not None:
-            values["progress"] = max(0.0, min(1.0, progress))
         with self.session_factory() as db:
+            current = db.get(BackgroundJob, job_id)
+            if current is None:
+                raise JobNotFound
+            allowed = _ALLOWED_TRANSITIONS.get(current.status, set())
+            if status != current.status and status not in allowed:
+                raise InvalidJobTransition(
+                    f"cannot transition {current.status.value} to {status.value}"
+                )
+            values: dict[str, Any] = {"status": status, "error": error}
+            if progress is not None:
+                values["progress"] = max(0.0, min(1.0, progress))
             result = db.execute(
-                update(BackgroundJob).where(BackgroundJob.id == job_id).values(**values)
+                update(BackgroundJob)
+                .where(
+                    BackgroundJob.id == job_id,
+                    BackgroundJob.status == current.status,
+                )
+                .values(**values)
             )
             if result.rowcount == 0:
-                raise JobNotFound
+                raise InvalidJobTransition("job state changed concurrently")
             db.commit()
 
     def request_cancel(self, job_id: UUID) -> None:
         with self.session_factory() as db:
             result = db.execute(
                 update(BackgroundJob)
-                .where(BackgroundJob.id == job_id)
+                .where(
+                    BackgroundJob.id == job_id,
+                    BackgroundJob.status.in_({JobStatus.QUEUED, *ACTIVE_JOB_STATUSES}),
+                )
                 .values(cancel_requested=True)
             )
             if result.rowcount == 0:
-                raise JobNotFound
+                if db.get(BackgroundJob, job_id) is None:
+                    raise JobNotFound
+                raise InvalidJobTransition("terminal jobs cannot be cancelled")
             db.commit()
 
     def is_cancel_requested(self, job_id: UUID) -> bool:
@@ -96,7 +133,9 @@ class JobRepository:
         with self.session_factory() as db:
             result = db.execute(
                 update(BackgroundJob)
-                .where(BackgroundJob.status.in_(ACTIVE_JOB_STATUSES))
+                .where(
+                    BackgroundJob.status.in_({JobStatus.QUEUED, *ACTIVE_JOB_STATUSES})
+                )
                 .values(status=JobStatus.INTERRUPTED)
             )
             db.commit()

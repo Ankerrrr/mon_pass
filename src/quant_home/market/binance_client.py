@@ -14,11 +14,13 @@ class BinancePublicClient:
         self,
         base_url: str = "https://api.binance.com",
         max_attempts: int = 3,
+        max_retry_delay: float = 10.0,
         timeout: float = 10.0,
         transport: httpx.BaseTransport | None = None,
         sleep: Callable[[float], None] = time.sleep,
     ) -> None:
         self.max_attempts = max_attempts
+        self.max_retry_delay = max_retry_delay
         self.sleep = sleep
         self.client = httpx.Client(
             base_url=base_url,
@@ -98,6 +100,13 @@ class BinancePublicClient:
                     if isinstance(exc, httpx.HTTPStatusError)
                     else None
                 )
-                delay = float(retry_after) if retry_after else 0.25 * (2**attempt)
+                fallback_delay = 0.25 * (2**attempt)
+                try:
+                    requested_delay = (
+                        float(retry_after) if retry_after else fallback_delay
+                    )
+                except ValueError:
+                    requested_delay = fallback_delay
+                delay = min(max(0.0, requested_delay), self.max_retry_delay)
                 self.sleep(delay)
         raise RuntimeError("unreachable")

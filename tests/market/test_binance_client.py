@@ -81,3 +81,29 @@ def test_candle_download_paginates_after_one_thousand_rows():
 
     assert len(candles) == 1001
     assert requests == 2
+
+
+def test_malformed_retry_after_falls_back_and_excessive_delay_is_capped():
+    headers = iter(["not-a-number", "999"])
+    delays = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        try:
+            retry_after = next(headers)
+        except StopIteration:
+            return httpx.Response(200, json={"symbols": []}, request=request)
+        return httpx.Response(
+            429,
+            headers={"Retry-After": retry_after},
+            request=request,
+        )
+
+    client = BinancePublicClient(
+        max_attempts=3,
+        max_retry_delay=10,
+        transport=httpx.MockTransport(handler),
+        sleep=delays.append,
+    )
+
+    assert client.exchange_info() == {"symbols": []}
+    assert delays == [0.25, 10]

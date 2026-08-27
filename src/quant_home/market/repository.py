@@ -13,7 +13,11 @@ from quant_home.market.models import (
     DatasetValidationIssue,
     StoredCandle,
 )
-from quant_home.market.validation import dataset_fingerprint, validate_candles
+from quant_home.market.validation import (
+    ValidationReport,
+    dataset_fingerprint,
+    validate_candles,
+)
 
 
 class CandleDownloader(Protocol):
@@ -48,8 +52,18 @@ class CandleRepository:
         *,
         force_refresh: bool = False,
     ) -> CandleDataset:
+        if start.tzinfo is None or end.tzinfo is None:
+            raise ValueError("start and end must include a UTC offset")
+        start = start.astimezone(UTC)
+        end = end.astimezone(UTC)
         if start >= end:
             raise ValueError("start must precede end")
+        interval_microseconds = int(interval.duration.total_seconds() * 1_000_000)
+        if (
+            int(start.timestamp() * 1_000_000) % interval_microseconds
+            or int(end.timestamp() * 1_000_000) % interval_microseconds
+        ):
+            raise ValueError("range must align to candle interval boundaries")
         symbol = symbol.upper()
 
         if not force_refresh:
@@ -76,18 +90,37 @@ class CandleRepository:
             current += interval.duration
 
         missing_times = [timestamp for timestamp in expected_times if timestamp not in cached]
+        raw_issues = []
         for missing_start, missing_end in self._contiguous_ranges(missing_times, interval):
-            for candle in self.downloader.fetch_candles(
-                symbol, interval, missing_start, missing_end
-            ):
+            downloaded = list(
+                self.downloader.fetch_candles(
+                    symbol, interval, missing_start, missing_end
+                )
+            )
+            raw_issues.extend(validate_candles(downloaded, interval).issues)
+            for candle in downloaded:
                 if start <= candle.open_time < end:
                     cached[candle.open_time] = candle
 
         candles = [cached[timestamp] for timestamp in expected_times if timestamp in cached]
-        report = validate_candles(candles, interval)
+        combined_issues = [*raw_issues, *validate_candles(candles, interval).issues]
+        report = ValidationReport(
+            tuple(
+                {
+                    (issue.code, issue.open_time): issue
+                    for issue in combined_issues
+                }.values()
+            )
+        )
         fingerprint = dataset_fingerprint(candles)
         existing = self.db.scalar(
-            select(CandleDataset).where(CandleDataset.fingerprint == fingerprint)
+            select(CandleDataset).where(
+                CandleDataset.symbol == symbol,
+                CandleDataset.interval == interval.value,
+                CandleDataset.start_time == start,
+                CandleDataset.end_time == end,
+                CandleDataset.fingerprint == fingerprint,
+            )
         )
         if existing is not None:
             return existing

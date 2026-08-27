@@ -19,3 +19,10 @@ ACTIVE_JOB_STATUSES = {
     JobStatus.RUNNING,
     JobStatus.AGGREGATING,
 }
+
+TERMINAL_JOB_STATUSES = {
+    JobStatus.COMPLETED,
+    JobStatus.FAILED,
+    JobStatus.CANCELLED,
+    JobStatus.INTERRUPTED,
+}

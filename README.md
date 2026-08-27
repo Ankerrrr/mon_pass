@@ -29,7 +29,7 @@ Invoke-RestMethod http://127.0.0.1:8000/api/health
 
 ## LAN 存取
 
-預設只綁定 `127.0.0.1`。若要讓同一可信任 LAN 的其他裝置連線，將 `.env` 的 `QUANT_HOME_BIND_HOST` 改為 `0.0.0.0`，並只在作業系統防火牆允許私人網路的 TCP 8000。請勿設定路由器 port forwarding，也不要把服務直接暴露到網際網路。
+預設只綁定 `127.0.0.1`。若要讓同一可信任 LAN 的其他裝置連線，先設定非預設的 `QUANT_HOME_INITIAL_ADMIN_PASSWORD`，再將 `.env` 的 `QUANT_HOME_BIND_HOST` 改為 `0.0.0.0`；若密碼仍是 placeholder，應用會拒絕啟動。作業系統防火牆只應允許私人網路的 TCP 8000。請勿設定路由器 port forwarding，也不要把服務直接暴露到網際網路。
 
 若透過 HTTPS reverse proxy 使用，設定 `QUANT_HOME_HTTPS_ENABLED=true`，使 session cookie 加上 `Secure`。
 

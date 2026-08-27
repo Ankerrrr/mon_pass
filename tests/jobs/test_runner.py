@@ -1,10 +1,11 @@
 import asyncio
 from dataclasses import dataclass
 
+import pytest
 from sqlalchemy import create_engine
 
 from quant_home.db import Base, create_session_factory
-from quant_home.jobs.repository import JobRepository
+from quant_home.jobs.repository import InvalidJobTransition, JobRepository
 from quant_home.jobs.runner import JobExecutionContext, JobRunner
 from quant_home.jobs.types import JobStatus
 
@@ -59,6 +60,22 @@ def test_startup_marks_running_jobs_interrupted():
 
     assert jobs.mark_interrupted_jobs() == 1
     assert jobs.latest().status is JobStatus.INTERRUPTED
+
+
+def test_startup_marks_unrecoverable_queued_jobs_interrupted():
+    jobs = repository()
+    jobs.insert(status=JobStatus.QUEUED, kind="test", payload={})
+
+    assert jobs.mark_interrupted_jobs() == 1
+    assert jobs.latest().status is JobStatus.INTERRUPTED
+
+
+def test_terminal_job_cannot_be_cancelled():
+    jobs = repository()
+    job_id = jobs.insert(status=JobStatus.COMPLETED, kind="test", payload={})
+
+    with pytest.raises(InvalidJobTransition):
+        jobs.request_cancel(job_id)
 
 
 def test_cancellation_preserves_completed_atomic_units():

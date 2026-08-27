@@ -36,6 +36,17 @@ class RecordingDownloader:
         return candles
 
 
+class EmptyDownloader:
+    def fetch_candles(self, symbol, interval, start, end):
+        return []
+
+
+class DuplicateDownloader(RecordingDownloader):
+    def fetch_candles(self, symbol, interval, start, end):
+        candles = super().fetch_candles(symbol, interval, start, end)
+        return [candles[0], candles[0]]
+
+
 def test_overlapping_range_downloads_only_missing_candles():
     engine = create_engine("sqlite+pysqlite:///:memory:")
     Base.metadata.create_all(engine)
@@ -78,3 +89,37 @@ def test_referenced_dataset_cannot_be_deleted():
 
         with pytest.raises(DatasetInUse):
             repository.delete_unused(dataset.id)
+
+
+def test_identical_content_does_not_cross_dataset_metadata_boundaries():
+    engine = create_engine("sqlite+pysqlite:///:memory:")
+    Base.metadata.create_all(engine)
+    start = datetime(2026, 1, 1, tzinfo=UTC)
+
+    with Session(engine) as db:
+        repository = CandleRepository(db, EmptyDownloader())
+        btc = repository.ensure_range(
+            "BTCUSDT", CandleInterval.ONE_HOUR, start, start + timedelta(hours=1)
+        )
+        eth = repository.ensure_range(
+            "ETHUSDT", CandleInterval.ONE_HOUR, start, start + timedelta(hours=1)
+        )
+
+        assert btc.id != eth.id
+        assert eth.symbol == "ETHUSDT"
+
+
+def test_raw_duplicate_is_persisted_as_validation_issue():
+    engine = create_engine("sqlite+pysqlite:///:memory:")
+    Base.metadata.create_all(engine)
+    start = datetime(2026, 1, 1, tzinfo=UTC)
+
+    with Session(engine) as db:
+        repository = CandleRepository(db, DuplicateDownloader())
+        dataset = repository.ensure_range(
+            "BTCUSDT", CandleInterval.ONE_HOUR, start, start + timedelta(hours=1)
+        )
+        loaded = repository.get(dataset.id)
+
+        assert loaded.is_valid is False
+        assert {issue.code for issue in loaded.issues} == {"DUPLICATE_CANDLE"}
