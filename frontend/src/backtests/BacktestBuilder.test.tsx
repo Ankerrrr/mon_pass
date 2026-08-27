@@ -24,5 +24,5 @@ it("creates a validated configuration and submits its backtest", async () => {
 
   expect(fetchMock).toHaveBeenNthCalledWith(1, "/api/configurations", expect.objectContaining({ method: "POST" }));
   expect(fetchMock).toHaveBeenNthCalledWith(2, "/api/backtests", expect.objectContaining({ method: "POST" }));
-  expect(await screen.findByRole("status")).toHaveTextContent("回測工作已送出");
+  expect(await screen.findByText(/回測工作已送出/)).toBeVisible();
 });

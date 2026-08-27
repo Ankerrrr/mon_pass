@@ -52,10 +52,28 @@ export type Configuration = {
   id: string; name: string; version: number; description?: string; payload: Record<string, unknown>;
 };
 
+export type StrategySummary = {
+  initial_cash: string; ending_cash: string; position_value: string; ending_equity: string;
+  total_pnl: string; total_return: string; realized_pnl: string; unrealized_pnl: string;
+  fees: string; fill_count: number; valuation_is_estimated: boolean;
+};
+
+export type StrategyOperation = {
+  filled_at: string | null; symbol: string; side: "buy" | "sell"; quantity: string;
+  price: string; notional: string; fee: string; cash_delta: string; realized_pnl: string;
+  cash_after: string; position_quantity_after: string; equity_after: string;
+  equity_change: string; reason: string; mode: "backtest" | "paper";
+};
+
+export type StrategyLedger = {
+  initial_cash: string; cash: string; fills: unknown[]; positions?: Record<string, unknown>;
+  summary: StrategySummary; operations: StrategyOperation[];
+};
+
 export type BacktestRun = {
   id: string; job_id: string | null; created_at: string; fingerprint: string;
   configuration_snapshot: { name?: string; payload?: Record<string, unknown> } & Record<string, unknown>;
-  result_snapshot: { cash_reserve: string; ledgers: Record<string, { initial_cash: string; cash: string; fills: unknown[] }> };
+  result_snapshot: { cash_reserve: string; ledgers: Record<string, StrategyLedger> };
 };
 
 export const listConfigurations = () => request<Configuration[]>("/configurations");
@@ -77,7 +95,7 @@ export type PaperSession = {
   id: string; configuration_id: string | null; configuration_version: number;
   status: "active" | "stopped" | "error"; connection_state: string;
   last_candle_at: string | null; error: string | null; created_at: string;
-  state_snapshot: { cash_reserve: string; ledgers: Record<string, { cash: string; fills: unknown[]; positions: Record<string, unknown> }> };
+  state_snapshot: { cash_reserve: string; ledgers: Record<string, StrategyLedger> };
 };
 
 export const listPaperSessions = () => request<PaperSession[]>("/paper");

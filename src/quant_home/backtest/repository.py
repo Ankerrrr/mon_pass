@@ -10,6 +10,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from quant_home.backtest.engine import BacktestResult
+from quant_home.backtest.analysis import analyze_ledger
 from quant_home.backtest.models import BacktestRun
 from quant_home.backtest.types import StrategyKind
 
@@ -89,11 +90,20 @@ class BacktestRepository:
     def _result_snapshot(result: BacktestResult) -> dict[str, Any]:
         return {
             "cash_reserve": str(result.cash_reserve),
+            "final_prices": {
+                kind.value: {symbol: str(price) for symbol, price in prices.items()}
+                for kind, prices in result.final_prices.items()
+            },
             "ledgers": {
                 kind.value: {
                     "initial_cash": str(ledger.initial_cash),
                     "cash": str(ledger.cash),
                     "fills": [fill.model_dump(mode="json") for fill in ledger.fills],
+                    **analyze_ledger(
+                        ledger.initial_cash,
+                        ledger.fills,
+                        result.final_prices.get(kind),
+                    ),
                 }
                 for kind, ledger in sorted(
                     result.ledgers.items(), key=lambda item: item[0].value

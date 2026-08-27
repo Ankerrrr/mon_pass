@@ -89,6 +89,8 @@ def test_save_completed_preserves_detached_immutable_snapshots():
             "mode": "backtest",
         }
     ]
+    assert stored.result_snapshot["ledgers"]["trend"]["summary"]["ending_equity"] == "399.90"
+    assert stored.result_snapshot["ledgers"]["trend"]["operations"][0]["cash_delta"] == "-100.10"
     assert stored.fingerprint == "a" * 64
     assert stored.engine_version == "1"
     assert stored.created_at.tzinfo is not None

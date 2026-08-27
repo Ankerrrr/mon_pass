@@ -1,5 +1,5 @@
 from collections.abc import Callable
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from decimal import Decimal
 import hashlib
 import json
@@ -24,6 +24,7 @@ class BacktestResult:
     cash_reserve: Decimal
     fingerprint: str
     engine_version: str
+    final_prices: dict[StrategyKind, dict[str, Decimal]] = field(default_factory=dict)
 
 
 class BacktestEngine:
@@ -81,6 +82,10 @@ class BacktestEngine:
             cash_reserve=config.initial_capital * config.allocations.cash_reserve,
             fingerprint=self._fingerprint(config, datasets),
             engine_version=self.VERSION,
+            final_prices={
+                kind: {symbol: series[-1].close for symbol, series in supplied.items()}
+                for kind, supplied in datasets.items()
+            },
         )
 
     def _run_symbol(

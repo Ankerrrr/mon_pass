@@ -75,4 +75,5 @@ def test_runtime_processes_each_closed_candle_once():
     assert runtime.on_candle(event) == 1
     assert runtime.on_candle(event) == 0
     assert len(PaperRepository(sessions).get(session_id).state_snapshot["candles"]["trend:BTCUSDT"]) == 1
+    assert PaperRepository(sessions).get(session_id).state_snapshot["last_prices"]["trend"]["BTCUSDT"] == "101"
     assert ReconnectPolicy().next_delay(20) == 30.0

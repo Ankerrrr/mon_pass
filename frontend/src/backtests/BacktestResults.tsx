@@ -1,8 +1,7 @@
 import { useEffect, useState } from "react";
 
 import { listBacktests, type BacktestRun } from "../api/client";
-
-const money = (value: string) => new Intl.NumberFormat("zh-TW", { maximumFractionDigits: 2 }).format(Number(value));
+import { StrategyLedgerDetails } from "../results/StrategyLedgerDetails";
 
 export function BacktestResults({ compact = false }: { compact?: boolean }) {
   const [runs, setRuns] = useState<BacktestRun[]>([]);
@@ -15,10 +14,9 @@ export function BacktestResults({ compact = false }: { compact?: boolean }) {
     {!error && runs.length === 0 && <div className="quiet-empty">尚無完成的回測。建立工作後可在這裡比較三個策略。</div>}
     <div className="run-list">{runs.slice(0, compact ? 3 : undefined).map((run) => {
       const ledgers = Object.entries(run.result_snapshot.ledgers);
-      return <article className="run-card" key={run.id}>
-        <div><small>{new Date(run.created_at).toLocaleString("zh-TW")}</small><strong>{run.configuration_snapshot.name ?? "策略回測"}</strong><code>{run.fingerprint.slice(0, 12)}</code></div>
-        <div className="ledger-row">{ledgers.map(([strategy, ledger]) => <span key={strategy}><small>{strategy.replace("mean_reversion", "mean rev.")}</small><b>{money(ledger.cash)} USDT</b><em>{ledger.fills.length} fills</em></span>)}</div>
-        <a className="text-link" href={`/api/backtests/${run.id}/trades.csv`}>匯出交易 CSV ↓</a>
+      return <article className="run-card expanded-results" key={run.id}>
+        <div className="run-meta"><div><small>{new Date(run.created_at).toLocaleString("zh-TW")}</small><strong>{run.configuration_snapshot.name ?? "策略回測"}</strong><code>{run.fingerprint.slice(0, 12)}</code></div><a className="text-link" href={`/api/backtests/${run.id}/trades.csv`}>匯出交易 CSV ↓</a></div>
+        <div className="strategy-results">{ledgers.map(([strategy, ledger]) => <StrategyLedgerDetails key={strategy} strategy={strategy} ledger={ledger} />)}</div>
       </article>;
     })}</div>
   </section>;

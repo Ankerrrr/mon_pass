@@ -95,6 +95,7 @@ def test_engine_keeps_strategy_ledgers_independent_and_uses_next_open():
     assert trend.position_quantity("BTCUSDT") > 0
     assert mean.position_quantity("BTCUSDT") == 0
     assert len(mean.fills) == 2
+    assert result.final_prices[StrategyKind.TREND]["BTCUSDT"] == Decimal("120")
 
 
 def test_same_inputs_have_same_result_fingerprint():

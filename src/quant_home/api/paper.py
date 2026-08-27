@@ -13,6 +13,7 @@ from quant_home.db import get_db
 from quant_home.paper.models import PaperSession
 from quant_home.paper.repository import PaperRepository, PaperSessionNotFound
 from quant_home.paper.service import PaperTradingService
+from quant_home.backtest.analysis import enrich_snapshot
 
 
 router = APIRouter(prefix="/paper", tags=["paper trading"])
@@ -30,7 +31,7 @@ def _json(item: PaperSession) -> dict[str, object]:
     return {
         "id": str(item.id), "configuration_id": str(item.configuration_id) if item.configuration_id else None,
         "configuration_version": item.configuration_version,
-        "configuration_snapshot": item.configuration_snapshot, "state_snapshot": item.state_snapshot,
+        "configuration_snapshot": item.configuration_snapshot, "state_snapshot": enrich_snapshot(item.state_snapshot),
         "status": item.status.value, "connection_state": item.connection_state.value,
         "last_candle_at": item.last_candle_at.isoformat() if item.last_candle_at else None,
         "error": item.error, "created_at": item.created_at.isoformat(),

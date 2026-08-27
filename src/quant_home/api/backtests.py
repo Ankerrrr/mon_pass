@@ -13,6 +13,7 @@ from quant_home.api.auth import require_admin, require_csrf
 from quant_home.auth.models import Administrator, AdminSession
 from quant_home.audit.service import AuditService
 from quant_home.backtest.models import BacktestRun
+from quant_home.backtest.analysis import enrich_snapshot
 from quant_home.backtest.repository import BacktestRepository, BacktestRunNotFound
 from quant_home.backtest.service import BacktestService, DuplicateBacktest
 from quant_home.configurations.repository import ConfigurationNotFound
@@ -41,7 +42,7 @@ def _run_json(run: BacktestRun) -> dict[str, object]:
         "job_id": str(run.job_id) if run.job_id else None,
         "configuration_snapshot": run.configuration_snapshot,
         "dataset_fingerprints": run.dataset_fingerprints,
-        "result_snapshot": run.result_snapshot,
+        "result_snapshot": enrich_snapshot(run.result_snapshot),
         "engine_version": run.engine_version,
         "fingerprint": run.fingerprint,
         "created_at": run.created_at.isoformat(),

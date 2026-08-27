@@ -46,6 +46,7 @@ class PaperRuntime:
         candle_rows = state.setdefault("candles", {}).setdefault(key, [])
         candle_rows.append(event.candle.model_dump(mode="json"))
         candle_rows[:] = candle_rows[-1002:]
+        state.setdefault("last_prices", {}).setdefault(kind.value, {})[event.symbol] = str(event.candle.close)
         if len(candle_rows) < 2:
             return
         candles = tuple(Candle.model_validate(row) for row in candle_rows)

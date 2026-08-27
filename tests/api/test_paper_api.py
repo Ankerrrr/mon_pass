@@ -27,7 +27,10 @@ def test_authenticated_paper_lifecycle_is_idempotent_and_audited():
         created = client.post("/api/paper", headers=headers, json={"configuration_id": config.json()["id"]})
         assert created.status_code == 201
         session_id = created.json()["id"]
-        assert client.get("/api/paper").json()[0]["status"] == "active"
+        paper = client.get("/api/paper").json()[0]
+        assert paper["status"] == "active"
+        assert paper["state_snapshot"]["ledgers"]["trend"]["summary"]["ending_equity"] == "4000.00"
+        assert paper["state_snapshot"]["ledgers"]["trend"]["operations"] == []
         assert client.post(f"/api/paper/{session_id}/stop", headers=headers).json() == {"stopped": True}
         assert client.post(f"/api/paper/{session_id}/stop", headers=headers).json() == {"stopped": False}
         actions = [item["action"] for item in client.get("/api/paper/audit/events").json()]

@@ -33,7 +33,7 @@ class PaperTradingService:
             configuration_snapshot=snapshot,
             state_snapshot={
                 "cash_reserve": str(config.initial_capital * config.allocations.cash_reserve),
-                "ledgers": ledgers, "strategy_states": {}, "candles": {},
+                "ledgers": ledgers, "strategy_states": {}, "candles": {}, "last_prices": {},
             },
             status=PaperSessionStatus.ACTIVE,
             connection_state=ConnectionState.STARTING,
