@@ -1,0 +1,1 @@
+"""Quant Home application package."""
