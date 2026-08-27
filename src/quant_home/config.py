@@ -13,3 +13,7 @@ class Settings(BaseSettings):
     environment: Literal["test", "development", "production"] = "development"
     simulation_only: bool = True
     database_url: str = "postgresql+psycopg://quant:quant@db:5432/quant"
+    initial_admin_username: str | None = None
+    initial_admin_password: str | None = None
+    https_enabled: bool = False
+    session_cookie_name: str = "quant_home_session"
