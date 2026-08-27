@@ -1,0 +1,1 @@
+{"root":["./src/main.tsx","./src/api/client.ts","./src/app/app.tsx","./src/auth/loginpage.test.tsx","./src/auth/loginpage.tsx","./src/backtests/backtestbuilder.test.tsx","./src/backtests/backtestbuilder.tsx","./src/backtests/backtestresults.tsx","./src/dashboard/overviewpage.tsx","./src/layout/appshell.tsx","./src/test/setup.ts"],"version":"5.9.3"}

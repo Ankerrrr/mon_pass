@@ -1,5 +1,6 @@
 from datetime import UTC, datetime
 from decimal import Decimal
+from uuid import uuid4
 
 import pytest
 from sqlalchemy import create_engine
@@ -113,6 +114,20 @@ def test_same_fingerprint_can_be_saved_as_distinct_runs():
 
     assert first_id != second_id
     assert [run.id for run in runs.list()] == [second_id, first_id]
+
+
+def test_completed_run_can_be_resolved_from_its_background_job():
+    runs = repository()
+    job_id = uuid4()
+
+    run_id = runs.save_completed(
+        completed_result(),
+        job_id=job_id,
+        configuration_snapshot={},
+        dataset_fingerprints={},
+    )
+
+    assert runs.get_by_job(job_id).id == run_id
 
 
 def test_invalid_result_is_not_partially_persisted():

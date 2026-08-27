@@ -26,6 +26,7 @@ class BacktestRepository:
         self,
         result: BacktestResult,
         *,
+        job_id: UUID | None = None,
         configuration_snapshot: dict[str, Any],
         dataset_fingerprints: dict[str, Any],
     ) -> UUID:
@@ -33,6 +34,7 @@ class BacktestRepository:
             raise ValueError("completed result must contain all strategy ledgers")
 
         run = BacktestRun(
+            job_id=job_id,
             configuration_snapshot=deepcopy(configuration_snapshot),
             dataset_fingerprints=deepcopy(dataset_fingerprints),
             result_snapshot=self._result_snapshot(result),
@@ -66,6 +68,14 @@ class BacktestRepository:
             for run in runs:
                 self._detach(db, run)
             return runs
+
+    def get_by_job(self, job_id: UUID) -> BacktestRun:
+        with self.session_factory() as db:
+            run = db.scalar(select(BacktestRun).where(BacktestRun.job_id == job_id))
+            if run is None:
+                raise BacktestRunNotFound
+            self._detach(db, run)
+            return run
 
     @staticmethod
     def _result_snapshot(result: BacktestResult) -> dict[str, Any]:

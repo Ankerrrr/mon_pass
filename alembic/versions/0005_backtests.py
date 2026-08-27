@@ -20,6 +20,7 @@ def upgrade() -> None:
     op.create_table(
         "backtest_runs",
         sa.Column("id", sa.Uuid(), nullable=False),
+        sa.Column("job_id", sa.Uuid(), nullable=True),
         sa.Column("configuration_snapshot", sa.JSON(), nullable=False),
         sa.Column("dataset_fingerprints", sa.JSON(), nullable=False),
         sa.Column("result_snapshot", sa.JSON(), nullable=False),
@@ -32,6 +33,12 @@ def upgrade() -> None:
             server_default=sa.func.now(),
         ),
         sa.PrimaryKeyConstraint("id"),
+        sa.ForeignKeyConstraint(
+            ["job_id"], ["background_jobs.id"], ondelete="SET NULL"
+        ),
+    )
+    op.create_index(
+        "ix_backtest_runs_job_id", "backtest_runs", ["job_id"], unique=True
     )
     op.create_index(
         "ix_backtest_runs_fingerprint", "backtest_runs", ["fingerprint"]
@@ -42,6 +49,7 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
+    op.drop_index("ix_backtest_runs_job_id", table_name="backtest_runs")
     op.drop_index("ix_backtest_runs_created_at", table_name="backtest_runs")
     op.drop_index("ix_backtest_runs_fingerprint", table_name="backtest_runs")
     op.drop_table("backtest_runs")
