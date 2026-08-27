@@ -18,3 +18,5 @@ class Settings(BaseSettings):
     https_enabled: bool = False
     session_cookie_name: str = "quant_home_session"
     max_background_jobs: int = 3
+    bind_host: str = "127.0.0.1"
+    bind_port: int = 8000

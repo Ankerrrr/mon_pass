@@ -51,6 +51,15 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         engine.dispose()
 
     app = FastAPI(title="Quant Home", lifespan=lifespan)
+
+    @app.middleware("http")
+    async def defensive_headers(request, call_next):
+        response = await call_next(request)
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["X-Frame-Options"] = "DENY"
+        response.headers["Referrer-Policy"] = "no-referrer"
+        return response
+
     app.state.settings = resolved_settings
     app.state.session_factory = session_factory
     app.state.login_throttle = LoginThrottle()

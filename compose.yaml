@@ -1,8 +1,44 @@
 services:
   api:
     build: .
+    command: ["sh", "-c", "alembic upgrade head && uvicorn quant_home.main:create_app --factory --host 0.0.0.0 --port 8000"]
+    environment:
+      QUANT_HOME_DATABASE_URL: postgresql+psycopg://quant:${QUANT_DB_PASSWORD:-quant}@db:5432/quant
+      QUANT_HOME_ENVIRONMENT: ${QUANT_HOME_ENVIRONMENT:-development}
+      QUANT_HOME_INITIAL_ADMIN_USERNAME: ${QUANT_HOME_INITIAL_ADMIN_USERNAME:-admin}
+      QUANT_HOME_INITIAL_ADMIN_PASSWORD: ${QUANT_HOME_INITIAL_ADMIN_PASSWORD:-change-this-password}
+      QUANT_HOME_HTTPS_ENABLED: ${QUANT_HOME_HTTPS_ENABLED:-false}
+      QUANT_HOME_MAX_BACKGROUND_JOBS: ${QUANT_HOME_MAX_BACKGROUND_JOBS:-3}
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "${QUANT_HOME_BIND_HOST:-127.0.0.1}:${QUANT_HOME_BIND_PORT:-8000}:8000"
     volumes:
       - ./src:/app/src
       - ./tests:/app/tests
       - ./alembic:/app/alembic
       - ./alembic.ini:/app/alembic.ini
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/health', timeout=2)"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: quant
+      POSTGRES_USER: quant
+      POSTGRES_PASSWORD: ${QUANT_DB_PASSWORD:-quant}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U quant -d quant"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  postgres-data:
