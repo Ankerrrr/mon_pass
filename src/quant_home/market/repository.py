@@ -5,6 +5,7 @@ from typing import Protocol, Sequence
 from uuid import UUID
 
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, selectinload
 
 from quant_home.market.candles import Candle, CandleInterval
@@ -164,7 +165,22 @@ class CandleRepository:
                 )
             )
         self.db.add(dataset)
-        self.db.commit()
+        try:
+            self.db.commit()
+        except IntegrityError:
+            self.db.rollback()
+            concurrent = self.db.scalar(
+                select(CandleDataset).where(
+                    CandleDataset.symbol == symbol,
+                    CandleDataset.interval == interval.value,
+                    CandleDataset.start_time == start,
+                    CandleDataset.end_time == end,
+                    CandleDataset.fingerprint == fingerprint,
+                )
+            )
+            if concurrent is None:
+                raise
+            return concurrent
         return dataset
 
     def list(self) -> list[CandleDataset]:

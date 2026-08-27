@@ -107,3 +107,33 @@ def test_malformed_retry_after_falls_back_and_excessive_delay_is_capped():
 
     assert client.exchange_info() == {"symbols": []}
     assert delays == [0.25, 10]
+
+
+def test_candle_download_preserves_raw_order_and_duplicates_for_validation():
+    start = datetime(2026, 1, 1, tzinfo=UTC)
+
+    def row(minutes: int):
+        opened_ms = int((start + timedelta(minutes=minutes)).timestamp() * 1000)
+        return [opened_ms, "100", "102", "99", "101", "10", opened_ms + 59_999]
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(
+            200,
+            json=[row(1), row(0), row(0)],
+            request=request,
+        )
+
+    client = BinancePublicClient(transport=httpx.MockTransport(handler))
+
+    candles = client.fetch_candles(
+        "BTCUSDT",
+        CandleInterval.ONE_MINUTE,
+        start,
+        start + timedelta(minutes=2),
+    )
+
+    assert [candle.open_time for candle in candles] == [
+        start + timedelta(minutes=1),
+        start,
+        start,
+    ]

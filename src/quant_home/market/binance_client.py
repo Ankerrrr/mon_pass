@@ -42,7 +42,7 @@ class BinancePublicClient:
         end: datetime,
     ) -> list[Candle]:
         cursor = start
-        candles: dict[datetime, Candle] = {}
+        candles: list[Candle] = []
         while cursor < end:
             payload = self._get_json(
                 "/api/v3/klines",
@@ -57,15 +57,14 @@ class BinancePublicClient:
             if not isinstance(payload, list):
                 raise ValueError("Binance kline response must be a JSON array")
             page = [self._parse_candle(row) for row in payload]
-            for candle in page:
-                candles[candle.open_time] = candle
+            candles.extend(page)
             if len(page) < 1000:
                 break
-            next_cursor = page[-1].open_time + interval.duration
+            next_cursor = max(candle.open_time for candle in page) + interval.duration
             if next_cursor <= cursor:
                 raise ValueError("Binance kline pagination did not advance")
             cursor = next_cursor
-        return [candles[timestamp] for timestamp in sorted(candles)]
+        return candles
 
     @staticmethod
     def _parse_candle(row: list[Any]) -> Candle:

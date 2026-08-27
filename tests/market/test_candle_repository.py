@@ -1,5 +1,7 @@
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
+from concurrent.futures import ThreadPoolExecutor
+from threading import Barrier
 
 import pytest
 from sqlalchemy import create_engine
@@ -123,3 +125,35 @@ def test_raw_duplicate_is_persisted_as_validation_issue():
 
         assert loaded.is_valid is False
         assert {issue.code for issue in loaded.issues} == {"DUPLICATE_CANDLE"}
+
+
+def test_concurrent_identical_range_returns_single_immutable_dataset(tmp_path):
+    engine = create_engine(
+        f"sqlite+pysqlite:///{tmp_path / 'concurrent.db'}",
+        connect_args={"check_same_thread": False},
+    )
+    Base.metadata.create_all(engine)
+    start = datetime(2026, 1, 1, tzinfo=UTC)
+    barrier = Barrier(2)
+
+    class ConcurrentDownloader(RecordingDownloader):
+        def fetch_candles(self, symbol, interval, range_start, range_end):
+            candles = super().fetch_candles(
+                symbol, interval, range_start, range_end
+            )
+            barrier.wait(timeout=5)
+            return candles
+
+    def create_dataset():
+        with Session(engine) as db:
+            return CandleRepository(db, ConcurrentDownloader()).ensure_range(
+                "BTCUSDT",
+                CandleInterval.ONE_HOUR,
+                start,
+                start + timedelta(hours=1),
+            ).id
+
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        dataset_ids = list(pool.map(lambda _: create_dataset(), range(2)))
+
+    assert dataset_ids[0] == dataset_ids[1]
