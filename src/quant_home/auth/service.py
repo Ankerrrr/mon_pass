@@ -109,6 +109,12 @@ class AuthService:
     def csrf_is_valid(self, session: AdminSession, raw_csrf_token: str) -> bool:
         return secrets.compare_digest(session.csrf_token_hash, _digest(raw_csrf_token))
 
+    def refresh_csrf(self, session: AdminSession) -> str:
+        raw_csrf_token = secrets.token_urlsafe(32)
+        session.csrf_token_hash = _digest(raw_csrf_token)
+        self.db.commit()
+        return raw_csrf_token
+
     def logout(self, session: AdminSession) -> None:
         self.db.delete(session)
         self.db.commit()

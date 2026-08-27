@@ -51,6 +51,28 @@ def test_login_current_user_and_csrf_protected_logout():
         assert client.get("/api/auth/me").status_code == 401
 
 
+def test_authenticated_session_can_refresh_its_csrf_token():
+    with make_client() as client:
+        login = client.post(
+            "/api/auth/login",
+            json={"username": "admin", "password": "valid-password"},
+        )
+        old_token = login.json()["csrf_token"]
+
+        refreshed = client.get("/api/auth/csrf")
+
+        assert refreshed.status_code == 200
+        new_token = refreshed.json()["csrf_token"]
+        assert new_token != old_token
+        assert "quant_home_csrf=" in refreshed.headers["set-cookie"]
+        assert client.post(
+            "/api/auth/logout", headers={"X-CSRF-Token": old_token}
+        ).status_code == 403
+        assert client.post(
+            "/api/auth/logout", headers={"X-CSRF-Token": new_token}
+        ).status_code == 204
+
+
 def test_fifth_bad_api_login_is_rate_limited():
     with make_client() as client:
         for _ in range(4):

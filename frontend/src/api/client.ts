@@ -1,6 +1,19 @@
 export type Admin = { username: string };
 
-let csrfToken: string | null = sessionStorage.getItem("quant-home-csrf");
+const csrfCookieName = "quant_home_csrf";
+
+function csrfCookie(): string | null {
+  const prefix = `${csrfCookieName}=`;
+  const row = document.cookie.split("; ").find((item) => item.startsWith(prefix));
+  return row ? decodeURIComponent(row.slice(prefix.length)) : null;
+}
+
+let csrfToken: string | null = csrfCookie() ?? sessionStorage.getItem("quant-home-csrf");
+
+function saveCsrfToken(value: string): void {
+  csrfToken = value;
+  sessionStorage.setItem("quant-home-csrf", value);
+}
 
 export class ApiError extends Error {
   constructor(public status: number, message: string) {
@@ -9,12 +22,28 @@ export class ApiError extends Error {
 }
 
 export async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
-  const headers = new Headers(init.headers);
-  if (init.body && !headers.has("Content-Type")) headers.set("Content-Type", "application/json");
-  if (csrfToken && init.method && !["GET", "HEAD"].includes(init.method.toUpperCase())) {
-    headers.set("X-CSRF-Token", csrfToken);
+  const method = init.method?.toUpperCase() ?? "GET";
+  const isMutation = !["GET", "HEAD"].includes(method);
+  const send = () => {
+    const headers = new Headers(init.headers);
+    if (init.body && !headers.has("Content-Type")) headers.set("Content-Type", "application/json");
+    const activeToken = csrfCookie() ?? csrfToken;
+    if (activeToken && isMutation) headers.set("X-CSRF-Token", activeToken);
+    return fetch(`/api${path}`, { ...init, headers, credentials: "same-origin" });
+  };
+
+  let response = await send();
+  if (!response.ok && response.status === 403 && isMutation && path !== "/auth/csrf") {
+    const body = await response.clone().json().catch(() => ({})) as { detail?: string };
+    if (body.detail === "Invalid CSRF token") {
+      const refreshed = await fetch("/api/auth/csrf", { credentials: "same-origin" });
+      if (refreshed.ok) {
+        const payload = await refreshed.json() as { csrf_token: string };
+        saveCsrfToken(payload.csrf_token);
+        response = await send();
+      }
+    }
   }
-  const response = await fetch(`/api${path}`, { ...init, headers, credentials: "same-origin" });
   if (!response.ok) {
     const body = await response.json().catch(() => ({})) as { detail?: string };
     throw new ApiError(response.status, body.detail ?? "Request failed");
@@ -28,8 +57,7 @@ export async function login(username: string, password: string): Promise<Admin> 
     method: "POST",
     body: JSON.stringify({ username, password }),
   });
-  csrfToken = response.csrf_token;
-  sessionStorage.setItem("quant-home-csrf", response.csrf_token);
+  saveCsrfToken(response.csrf_token);
   return response.user;
 }
 

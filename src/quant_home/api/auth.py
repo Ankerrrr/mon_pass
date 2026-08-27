@@ -1,3 +1,4 @@
+from datetime import UTC
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
@@ -14,6 +15,7 @@ from quant_home.db import get_db
 
 
 router = APIRouter(prefix="/auth", tags=["authentication"])
+CSRF_COOKIE_NAME = "quant_home_csrf"
 Database = Annotated[Session, Depends(get_db)]
 
 
@@ -76,6 +78,15 @@ def login(payload: LoginRequest, request: Request, response: Response, db: Datab
         samesite="strict",
         path="/",
     )
+    response.set_cookie(
+        CSRF_COOKIE_NAME,
+        session_token.csrf_token,
+        expires=session_token.expires_at,
+        httponly=False,
+        secure=settings.https_enabled,
+        samesite="strict",
+        path="/",
+    )
     return {
         "user": {"username": payload.username},
         "csrf_token": session_token.csrf_token,
@@ -90,6 +101,30 @@ def current_user(
     return {"username": administrator.username}
 
 
+@router.get("/csrf")
+def refresh_csrf(
+    request: Request,
+    response: Response,
+    db: Database,
+    session: Annotated[AdminSession, Depends(require_session)],
+) -> dict[str, str]:
+    token = _service(request, db).refresh_csrf(session)
+    response.set_cookie(
+        CSRF_COOKIE_NAME,
+        token,
+        expires=(
+            session.expires_at.replace(tzinfo=UTC)
+            if session.expires_at.tzinfo is None
+            else session.expires_at.astimezone(UTC)
+        ),
+        httponly=False,
+        secure=request.app.state.settings.https_enabled,
+        samesite="strict",
+        path="/",
+    )
+    return {"csrf_token": token}
+
+
 @router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
 def logout(
     request: Request,
@@ -102,6 +137,12 @@ def logout(
         request.app.state.settings.session_cookie_name,
         path="/",
         httponly=True,
+        secure=request.app.state.settings.https_enabled,
+        samesite="strict",
+    )
+    response.delete_cookie(
+        CSRF_COOKIE_NAME,
+        path="/",
         secure=request.app.state.settings.https_enabled,
         samesite="strict",
     )
