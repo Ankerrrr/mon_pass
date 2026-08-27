@@ -5,7 +5,7 @@ import logging
 from fastapi import FastAPI
 from sqlalchemy import select
 
-from quant_home.api import auth, datasets, health, jobs, symbols
+from quant_home.api import auth, configurations, datasets, health, jobs, symbols
 from quant_home.auth.models import Administrator
 from quant_home.auth.passwords import hash_password
 from quant_home.auth.service import LoginThrottle
@@ -95,5 +95,6 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(auth.router, prefix="/api")
     app.include_router(symbols.router, prefix="/api")
     app.include_router(datasets.router, prefix="/api")
+    app.include_router(configurations.router, prefix="/api")
     app.include_router(jobs.router, prefix="/api")
     return app
