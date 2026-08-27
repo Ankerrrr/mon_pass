@@ -4,7 +4,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from sqlalchemy import select
 
-from quant_home.api import auth, datasets, health, symbols
+from quant_home.api import auth, datasets, health, jobs, symbols
 from quant_home.auth.models import Administrator
 from quant_home.auth.passwords import hash_password
 from quant_home.auth.service import LoginThrottle
@@ -12,17 +12,25 @@ from quant_home.config import Settings
 from quant_home.db import Base, create_database_engine, create_session_factory
 from quant_home.market.binance_client import BinancePublicClient
 from quant_home.market.catalog import SymbolCatalog
+from quant_home.jobs.repository import JobRepository
+from quant_home.jobs.runner import JobRunner
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
     resolved_settings = settings or Settings()
     engine = create_database_engine(resolved_settings.database_url)
     session_factory = create_session_factory(engine)
+    job_repository = JobRepository(session_factory)
+    job_runner = JobRunner(
+        job_repository,
+        max_concurrency=resolved_settings.max_background_jobs,
+    )
 
     @asynccontextmanager
     async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         if resolved_settings.environment == "test":
             Base.metadata.create_all(engine)
+        job_repository.mark_interrupted_jobs()
         if (
             resolved_settings.initial_admin_username
             and resolved_settings.initial_admin_password
@@ -49,8 +57,11 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     binance_client = BinancePublicClient()
     app.state.symbol_catalog = SymbolCatalog(binance_client)
     app.state.candle_downloader = binance_client
+    app.state.job_repository = job_repository
+    app.state.job_runner = job_runner
     app.include_router(health.router, prefix="/api")
     app.include_router(auth.router, prefix="/api")
     app.include_router(symbols.router, prefix="/api")
     app.include_router(datasets.router, prefix="/api")
+    app.include_router(jobs.router, prefix="/api")
     return app

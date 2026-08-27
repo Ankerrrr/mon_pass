@@ -17,3 +17,4 @@ class Settings(BaseSettings):
     initial_admin_password: str | None = None
     https_enabled: bool = False
     session_cookie_name: str = "quant_home_session"
+    max_background_jobs: int = 3
