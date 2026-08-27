@@ -40,7 +40,7 @@ Invoke-RestMethod http://127.0.0.1:8000/api/health
 - login response 的 `csrf_token` 必須放入所有變更狀態請求的 `X-CSRF-Token` header。
 - 除 `/api/health` 與登入外，應用端點都要求管理員 session。
 
-初始管理員只在資料庫尚無管理員時建立。建立後修改 `.env` 密碼不會自動重設既有密碼。
+`.env` 的管理員帳號與密碼是本機單一管理員的權威設定；修改後執行 `docker compose restart api` 即會同步，並使舊登入工作階段失效。
 
 ## 測試與 migration
 

@@ -3,11 +3,8 @@ from contextlib import asynccontextmanager
 import logging
 
 from fastapi import FastAPI
-from sqlalchemy import select
-
 from quant_home.api import auth, backtests, configurations, datasets, health, jobs, paper, symbols, system
-from quant_home.auth.models import Administrator
-from quant_home.auth.passwords import hash_password
+from quant_home.auth.bootstrap import sync_configured_admin
 from quant_home.auth.service import LoginThrottle
 from quant_home.config import Settings
 from quant_home.db import Base, create_database_engine, create_session_factory
@@ -42,17 +39,11 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             and resolved_settings.initial_admin_password
         ):
             with session_factory() as db:
-                existing = db.scalar(select(Administrator).limit(1))
-                if existing is None:
-                    db.add(
-                        Administrator(
-                            username=resolved_settings.initial_admin_username,
-                            password_hash=hash_password(
-                                resolved_settings.initial_admin_password
-                            ),
-                        )
-                    )
-                    db.commit()
+                sync_configured_admin(
+                    db,
+                    resolved_settings.initial_admin_username,
+                    resolved_settings.initial_admin_password,
+                )
         should_refresh_catalog = (
             resolved_settings.refresh_symbol_catalog_on_startup is True
             or (
