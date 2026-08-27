@@ -6,6 +6,13 @@ from quant_home.backtest.ledger import Ledger
 from quant_home.backtest.types import Fill
 
 
+def test_zero_cash_ledger_supports_a_disabled_strategy():
+    ledger = Ledger(initial_cash=Decimal("0"))
+
+    assert ledger.cash == 0
+    assert ledger.equity({}) == 0
+
+
 def test_round_trip_conserves_cash_after_fee():
     ledger = Ledger(initial_cash=Decimal("1000"))
 

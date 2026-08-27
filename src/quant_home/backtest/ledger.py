@@ -5,8 +5,8 @@ from quant_home.backtest.types import Fill, Position, Side
 
 class Ledger:
     def __init__(self, initial_cash: Decimal) -> None:
-        if initial_cash <= 0:
-            raise ValueError("initial cash must be positive")
+        if initial_cash < 0:
+            raise ValueError("initial cash cannot be negative")
         self.initial_cash = initial_cash
         self.cash = initial_cash
         self._positions: dict[str, Position] = {}
