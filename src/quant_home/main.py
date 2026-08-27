@@ -65,8 +65,11 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             except Exception as exc:
                 app.state.symbol_catalog_error = str(exc)
                 logger.exception("Binance symbol catalog refresh failed")
-        yield
-        engine.dispose()
+        try:
+            yield
+        finally:
+            app.state.market_client.close()
+            engine.dispose()
 
     app = FastAPI(title="Quant Home", lifespan=lifespan)
 
@@ -82,6 +85,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.state.session_factory = session_factory
     app.state.login_throttle = LoginThrottle()
     binance_client = BinancePublicClient()
+    app.state.market_client = binance_client
     app.state.symbol_catalog = SymbolCatalog(binance_client)
     app.state.symbol_catalog_error = None
     app.state.candle_downloader = binance_client

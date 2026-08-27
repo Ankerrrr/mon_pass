@@ -28,6 +28,9 @@ class BinancePublicClient:
             transport=transport,
         )
 
+    def close(self) -> None:
+        self.client.close()
+
     def exchange_info(self) -> dict[str, Any]:
         payload = self._get_json("/api/v3/exchangeInfo")
         if not isinstance(payload, dict):
