@@ -47,12 +47,13 @@ class TrendConfig(FrozenModel):
     moving_average: Literal["ema", "sma"] = "ema"
     fast_period: int = Field(default=20, ge=2, le=500)
     slow_period: int = Field(default=50, ge=3, le=1000)
-    confirmation_candles: int = Field(default=1, ge=1, le=20)
+    confirmation_candles: int = Field(default=2, ge=1, le=20)
+    exit_confirmation_candles: int = Field(default=2, ge=1, le=20)
     fixed_stop_loss: Decimal = Field(default=Decimal("0.03"), gt=0, lt=1)
     trailing_stop: Decimal = Field(default=Decimal("0.05"), gt=0, lt=1)
     take_profit: Decimal | None = Field(default=None, gt=0, lt=10)
     entry_allocation: Decimal = Field(default=Decimal("1"), gt=0, le=1)
-    cooldown_candles: int = Field(default=0, ge=0, le=10000)
+    cooldown_candles: int = Field(default=3, ge=0, le=10000)
 
     @model_validator(mode="after")
     def fast_is_less_than_slow(self):

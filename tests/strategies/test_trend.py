@@ -36,6 +36,7 @@ def test_trend_enters_after_confirmed_cross_and_exits_on_trailing_stop():
             slow_period=3,
             fixed_stop_loss=Decimal("0.03"),
             trailing_stop=Decimal("0.05"),
+            confirmation_candles=1,
         )
     )
 
@@ -66,7 +67,10 @@ def test_trend_enters_after_confirmed_cross_and_exits_on_trailing_stop():
 def test_trend_signal_does_not_read_future_candles():
     prefix = ["3", "2", "1", "2", "3"]
     strategy = TrendStrategy(
-        TrendConfig(moving_average="sma", fast_period=2, slow_period=3)
+        TrendConfig(
+            moving_average="sma", fast_period=2, slow_period=3,
+            confirmation_candles=1,
+        )
     )
 
     high_future = strategy.generate(
@@ -78,6 +82,34 @@ def test_trend_signal_does_not_read_future_candles():
 
     assert high_future == low_future
     assert high_future[0].reason == "FAST_ABOVE_SLOW"
+
+
+def test_trend_requires_two_confirmed_closes_before_moving_average_exit():
+    series = candles(["103", "102", "101", "102", "103", "101", "100", "100"])
+    strategy = TrendStrategy(
+        TrendConfig(
+            moving_average="sma",
+            fast_period=2,
+            slow_period=3,
+            fixed_stop_loss=Decimal("0.50"),
+            trailing_stop=Decimal("0.50"),
+            exit_confirmation_candles=2,
+        )
+    )
+    state = StrategyState(
+        positions={
+            "BTCUSDT": Position(
+                symbol="BTCUSDT", quantity=Decimal("1"), average_price=Decimal("100")
+            )
+        },
+        values={"symbol": "BTCUSDT", "peak_price": Decimal("103")},
+    )
+
+    first_close_below = strategy.generate(6, CandleWindow(series, 6), state)
+    second_close_below = strategy.generate(7, CandleWindow(series, 7), state)
+
+    assert first_close_below == []
+    assert second_close_below[0].reason == "FAST_BELOW_SLOW"
 
 
 def test_trend_respects_entry_cooldown():
@@ -94,6 +126,35 @@ def test_trend_respects_entry_cooldown():
     signals = strategy.generate(
         4,
         CandleWindow(series, 4),
+        StrategyState(values={"symbol": "BTCUSDT", "last_exit_index": 3}),
+    )
+
+    assert signals == []
+
+
+def test_trend_default_requires_two_closes_to_confirm_entry():
+    strategy = TrendStrategy(
+        TrendConfig(moving_average="sma", fast_period=2, slow_period=3)
+    )
+
+    signals = strategy.generate(
+        4, CandleWindow(candles(["3", "2", "1", "2", "3"]), 4), StrategyState()
+    )
+
+    assert signals == []
+
+
+def test_trend_default_cooldown_blocks_immediate_reentry():
+    strategy = TrendStrategy(
+        TrendConfig(
+            moving_average="sma", fast_period=2, slow_period=3,
+            confirmation_candles=2,
+        )
+    )
+
+    signals = strategy.generate(
+        5,
+        CandleWindow(candles(["3", "2", "1", "2", "3", "4"]), 5),
         StrategyState(values={"symbol": "BTCUSDT", "last_exit_index": 3}),
     )
 

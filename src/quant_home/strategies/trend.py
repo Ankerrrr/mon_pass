@@ -62,7 +62,7 @@ class TrendStrategy:
             >= position.average_price * (Decimal("1") + self.config.take_profit)
         ):
             return self._market_sell(symbol, position.quantity, "TAKE_PROFIT")
-        if self._crossed_below(closes):
+        if self._confirmed_cross_below(closes):
             return self._market_sell(symbol, position.quantity, "FAST_BELOW_SLOW")
         return None
 
@@ -92,14 +92,21 @@ class TrendStrategy:
             for position in range(start, len(closes))
         )
 
-    def _crossed_below(self, closes: list[Decimal]) -> bool:
+    def _confirmed_cross_below(self, closes: list[Decimal]) -> bool:
         fast = self._moving_average(closes, self.config.fast_period)
         slow = self._moving_average(closes, self.config.slow_period)
-        if len(closes) < 2 or any(
-            value is None for value in (fast[-2], slow[-2], fast[-1], slow[-1])
-        ):
+        start = len(closes) - self.config.exit_confirmation_candles
+        before = start - 1
+        if before < 0 or fast[before] is None or slow[before] is None:
             return False
-        return fast[-2] >= slow[-2] and fast[-1] < slow[-1]
+        if fast[before] < slow[before]:
+            return False
+        return all(
+            fast[position] is not None
+            and slow[position] is not None
+            and fast[position] < slow[position]
+            for position in range(start, len(closes))
+        )
 
     def _moving_average(
         self, values: list[Decimal], period: int

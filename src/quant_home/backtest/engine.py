@@ -28,7 +28,7 @@ class BacktestResult:
 
 
 class BacktestEngine:
-    VERSION = "2"
+    VERSION = "3"
 
     def __init__(
         self,
