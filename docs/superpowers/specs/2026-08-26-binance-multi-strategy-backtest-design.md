@@ -1,7 +1,8 @@
 # Binance Multi-Strategy Backtest System Design
 
 Date: 2026-08-26  
-Status: Approved design, pending written-spec review
+Approved: 2026-08-27
+Status: Approved for full first-release implementation
 
 ## 1. Purpose
 
@@ -362,3 +363,23 @@ The first release is accepted when:
 ## 18. Future Extension Boundary
 
 Real-money trading is a separate project phase. It requires a dedicated design review covering exchange authentication, order idempotency, reconciliation, clock synchronization, partial fills, exchange filters, emergency shutdown, monitoring, credential rotation, and operational/legal readiness. Approval of this document does not approve live trading.
+
+## 19. Delivery Sequence and Gates
+
+The complete first release is delivered sequentially so downstream interfaces build on verified foundations:
+
+1. Complete the deterministic backtest domain, persistence, API, reporting, and named configuration support.
+2. Complete the authenticated responsive web dashboard and the end-to-end backtest workflow.
+3. Complete restart-safe public-data paper trading, audit controls, operational health, backup, and restore.
+4. Run the full backend, frontend, browser, migration, fixed-dataset, and Docker Compose acceptance suite.
+
+Each phase must pass its focused tests, the accumulated regression suite, and a code review before the next phase begins. The application must remain runnable at every phase boundary. Paper trading may reuse only the already-tested strategy, execution, ledger, and risk interfaces; it must not create a parallel accounting implementation.
+
+The existing migration head is `0004_dataset_identity`. New revisions are allocated without renaming applied history:
+
+- `0005_backtests`
+- `0006_strategy_configurations`
+- `0007_paper_sessions`
+- `0008_audit_events`
+
+The release remains simulation-only throughout development and acceptance. No implementation step may introduce Binance private credentials, signed endpoints, or real-order capability.
